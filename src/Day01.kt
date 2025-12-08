@@ -1,6 +1,3 @@
-import com.sun.org.apache.xpath.internal.operations.Or
-import jdk.internal.vm.vector.VectorSupport.test
-
 fun main() {
 
     fun part1(input: List<String>): Int {
