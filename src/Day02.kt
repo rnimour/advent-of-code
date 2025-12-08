@@ -36,15 +36,13 @@ fun main() {
         return sillyPatternsTotal
     }
 
-    // Small test from description, read test input from the `src/Day01_test.txt` file:
     val expectedValue = 1227775554L
     val testInput = readInput("Day02_test")
-    // check(part1(testInput) == expectedValue)
+    check(part1(testInput) == expectedValue)
 
     val expectedValue2 = 4174379265L
     check(part2(testInput) == expectedValue2)
 
-    // Read the input from the `src/Day01.txt` file.
     val input = readInput("Day02")
     part1(input).println()
     part2(input).println()
