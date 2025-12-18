@@ -6,50 +6,61 @@ const val SERVER = "svr"
 
 fun main() {
 
-    fun part1(input: List<String>): Int {
+    fun part1(input: List<String>): Long {
         val startPoints = nextServers(START, input)
         return startPoints.sumOf {
             it.howManyPathsTo(OUT, input)
         }
     }
 
-    fun part2(input: List<String>): Int {
+    fun part2v2(input: List<String>): Long {
         // find every path from SERVER to OUT which passes through both DAC and FFT
+        val nodeToNumberOfPathsMap = mutableMapOf<NodeKey, Long>()
+
         val startPoints = nextServers(SERVER, input)
         return startPoints.sumOf {
-            it.howManyPathsToWithConditions(
+            it.howManyPathsToRememberingNodesWithConditionsAndSavePath(
                 OUT,
                 input,
-                emptySet(),
-                setOf(DAC, FFT)
-            ).first
+                nodeToNumberOfPathsMap,
+                false,
+                false
+            )
+
         }
     }
 
-    val expectedValue = 5
-    val expectedValue2 = 2
+    val expectedValue = 5L
+    val expectedValue2 = 2L
     val day = "11"
-    val testInput = readInput("Day${day}_test")
-    val testInput2 = readInput("Day${day}_test2")
+    // val testInput = readInput("Day${day}_test")
     // val test1 = part1(testInput)
     // test1.println()
     // check(test1 == expectedValue)
-    val test2 = part2(testInput2)
+    val testInput2 = readInput("Day${day}_test2")
+    val test2 = part2v2(testInput2)
     test2.println()
     check(test2 == expectedValue2)
 
     val input = readInput("Day$day")
     // time("part 1") { part1(input) }.println()
-    time("part 2") { part2(input) }.println()
+    // time("part 2") { part2(input) }.println()
+    time("part 2") { part2v2(input) }.println()
 }
 
-fun nextServers(currentServer: String, input: List<String>): List<String> =
-    input.first { it.startsWith(currentServer) }.split(": ")[1] // get the outputs
-        .split(" ").map { it.trim() }
+fun nextServers(
+    currentServer: String,
+    input: List<String>,
+): List<String> =
+    input.first { it.startsWith(currentServer) }
+        .split(": ")[1] // get the outputs
+        .split(" ")
+        .map { it.trim() }
+
 
 // assuming no loops
-private fun String.howManyPathsTo(exit: String, input: List<String>): Int {
-    var paths = 0
+private fun String.howManyPathsTo(exit: String, input: List<String>): Long {
+    var paths = 0L
     for (server in nextServers(this, input)) {
         if (server == exit) {
             paths++
@@ -60,44 +71,39 @@ private fun String.howManyPathsTo(exit: String, input: List<String>): Int {
     return paths
 }
 
-// private fun String.howManyPathsToRememberNodes(
-//     exit: String,
-//     input: List<String>,
-//     visitedNodes: Set<String>,
-// ): Pair<Int, Set<String>> {
-//     var paths = 0
-//     val visitedNodes: Set<String> = visitedNodes + this
-//     for (server in nextServers(this, input)) {
-//         if (server == exit) {
-//             paths++
-//         } else {
-//             paths += server.howManyPathsToRememberNodes(exit, input, HashSet(visitedNodes)).first
-//         }
-//     }
-//     return Pair(paths, visitedNodes)
-// }
-
-private fun String.howManyPathsToWithConditions(
+// assuming no loops
+private fun String.howManyPathsToRememberingNodesWithConditionsAndSavePath(
     exit: String,
     input: List<String>,
-    visitedNodes: Set<String>,
-    requiredNodes: Set<String>,
-): Pair<Int, Set<String>> {
-    var paths = 0
-    val visitedNodes: Set<String> = visitedNodes + this
-    // visitedNodes.println()
-    for (server in nextServers(this, input)) {
-        if (server == exit) {
-            if (visitedNodes.containsAll(requiredNodes)) {
-                paths++
-                // print("!!!! ")
-            }
-            // (visitedNodes + exit).println()
-        } else {
-            paths += server.howManyPathsToWithConditions(exit, input, visitedNodes, requiredNodes).first
-        }
+    nodeToNumberOfPathsMap: MutableMap<NodeKey, Long>,
+    visitedDAC: Boolean,
+    visitedFFT: Boolean,
+): Long {
+    val nodeKey = NodeKey(this, visitedDAC, visitedFFT)
+    if (this == exit) {
+        return if (visitedDAC && visitedFFT) 1L else 0L
+    }
+    if (nodeToNumberOfPathsMap.contains(nodeKey)) {
+        // TODO: prevent loops
+        return nodeToNumberOfPathsMap[nodeKey]!!
     }
 
-    return Pair(paths, visitedNodes)
+    var paths = 0L
+    for (server in nextServers(this, input)) {
+        paths += server.howManyPathsToRememberingNodesWithConditionsAndSavePath(
+            exit = exit,
+            input = input,
+            nodeToNumberOfPathsMap = nodeToNumberOfPathsMap,
+            visitedDAC = visitedDAC || this == DAC,
+            visitedFFT = visitedFFT || this == FFT,
+        )
+    }
+    nodeToNumberOfPathsMap[nodeKey] = paths
+    return paths
 }
 
+data class NodeKey(
+    val server: String,
+    val visitedDAC: Boolean,
+    val visitedFFT: Boolean,
+)
